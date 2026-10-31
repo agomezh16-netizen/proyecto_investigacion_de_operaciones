@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SIORE · Sistema Inteligente de Optimización de Recursos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <h1>SIORE</h1>
+      <p>Sistema Inteligente de Optimización de Recursos · Programación Lineal</p>
+    </div>
+    <div id="statusChip" class="chip" role="status">Sin resolver</div>
+  </header>
+
+  <div class="shell">
+    <nav class="rail" aria-label="Pasos del análisis">
+      <ol>
+        <li><button type="button" data-go="modelo">Modelo</button></li>
+        <li><button type="button" data-go="estandar">Forma estándar</button></li>
+        <li><button type="button" data-go="simplex">Simplex paso a paso</button></li>
+        <li><button type="button" data-go="dashboard">Dashboard</button></li>
+        <li><button type="button" data-go="escenarios">Escenarios</button></li>
+        <li><button type="button" data-go="comparacion">Simplex propio vs. PuLP</button></li>
+        <li><button type="button" data-go="historial">Historial (base de datos)</button></li>
+      </ol>
+    </nav>
+
+    <main>
+      <!-- 1. MODELO -->
+      <section id="modelo" aria-labelledby="h-modelo">
+        <h2 id="h-modelo">Construye tu modelo</h2>
+        <p class="lead-text">Define el problema, sus variables de decisión, la función objetivo y las restricciones. No hay límite fijo de variables ni de restricciones. Todas las variables cumplen xⱼ ≥ 0.</p>
+
+        <div class="fields">
+          <label>Nombre del problema
+            <input id="problemName" type="text" autocomplete="off">
+          </label>
+          <label>Tipo
+            <select id="problemType">
+              <option value="max">Maximización (utilidad)</option>
+              <option value="min">Minimización (costo)</option>
+            </select>
+          </label>
+          <label>Unidad monetaria
+            <input id="currency" type="text" maxlength="4" autocomplete="off">
+          </label>
+          <label>Cargar un ejemplo
+            <span class="inline">
+              <select id="exampleSelect">
+                <option value="software">Cartera de proyectos de software (máx.)</option>
+                <option value="logistica">Flota de reparto (mín., con ≥ e =)</option>
+                <option value="vacio">Modelo en blanco (3 variables, 3 restricciones)</option>
+              </select>
+              <button type="button" class="btn" id="loadExample">Cargar</button>
+            </span>
+          </label>
+        </div>
+
+        <div id="editor"></div>
+
+        <div class="actions">
+          <button type="button" class="btn" id="addVar">Agregar variable</button>
+          <button type="button" class="btn" id="addCon">Agregar restricción</button>
+          <button type="button" class="btn primary" id="solveBtn">Resolver modelo</button>
+        </div>
+        <p id="modelMsg" class="msg" role="alert"></p>
+
+        <h3>Modelo matemático</h3>
+        <pre id="formal" class="formal" aria-label="Modelo en notación formal"></pre>
+      </section>
+
+      <!-- 2. FORMA ESTÁNDAR -->
+      <section id="estandar" aria-labelledby="h-estandar" hidden>
+        <h2 id="h-estandar">Forma estándar</h2>
+        <p class="lead-text">El sistema convierte las desigualdades en igualdades y decide qué variable auxiliar corresponde a cada restricción.</p>
+        <div id="stdOut"></div>
+      </section>
+
+      <!-- 3. SIMPLEX -->
+      <section id="simplex" aria-labelledby="h-simplex" hidden>
+        <h2 id="h-simplex">Simplex propio, paso a paso</h2>
+        <p class="lead-text">Tabla inicial, variable entrante y saliente, pivote y cada iteración hasta la tabla final. La fila Z muestra z<sub>j</sub> − c<sub>j</sub>; M es la penalización de las artificiales.</p>
+        <div id="simplexOut"></div>
+      </section>
+
+      <!-- 4. DASHBOARD -->
+      <section id="dashboard" aria-labelledby="h-dashboard" hidden>
+        <div class="dash-head">
+          <h2 id="h-dashboard">Dashboard de resultados</h2>
+          <div class="actions tight">
+            <button type="button" class="btn" id="exportCsv">Exportar CSV para Power BI</button>
+            <button type="button" class="btn" id="exportJson">Exportar JSON</button>
+          </div>
+        </div>
+        <details class="howto">
+          <summary>Cómo llevar este dashboard a Power BI</summary>
+          <ol>
+            <li>Pulsa <strong>Exportar CSV para Power BI</strong> (incluye el escenario base y los escenarios del ejercicio; en el Historial puedes exportar todos los ejercicios).</li>
+            <li>En Power BI Desktop: <em>Obtener datos → Texto/CSV</em> y selecciona el archivo.</li>
+            <li>El archivo está en formato largo: filtra por <code>Categoria</code> (Resultado, Variable, Recurso) y usa <code>Escenario</code> como leyenda.</li>
+            <li>Sugerencias: tarjeta con <code>Valor</code> de Z; barras agrupadas de <code>Utilizado</code> y <code>Disponible</code> por recurso; dona con <code>Valor</code> de las variables.</li>
+          </ol>
+        </details>
+        <div id="dashOut"></div>
+      </section>
+
+      <!-- 5. ESCENARIOS -->
+      <section id="escenarios" aria-labelledby="h-escenarios" hidden>
+        <h2 id="h-escenarios">Escenarios</h2>
+        <p class="lead-text">Cambia los recursos disponibles, vuelve a ejecutar el modelo y compara el impacto frente al escenario base.</p>
+        <div id="scenOut"></div>
+      </section>
+
+      <!-- 6. COMPARACIÓN -->
+      <section id="comparacion" aria-labelledby="h-comparacion" hidden>
+        <h2 id="h-comparacion">Simplex propio vs. PuLP</h2>
+        <p class="lead-text">El mismo modelo se resuelve con el Simplex propio (Método A, Gran M) y con la librería PuLP (Método B). Los resultados deben coincidir.</p>
+        <div id="cmpOut"></div>
+      </section>
+
+      <!-- 7. HISTORIAL -->
+      <section id="historial" aria-labelledby="h-historial" hidden>
+        <div class="dash-head">
+          <h2 id="h-historial">Historial de ejercicios</h2>
+          <div class="actions tight">
+            <button type="button" class="btn" data-hact="csvall">Exportar todo a CSV (Power BI)</button>
+          </div>
+        </div>
+        <p class="lead-text">Cada modelo que resuelves se guarda en la base de datos SQLite (<code>datos/siore.db</code>) junto con sus escenarios y los resultados de ambos métodos.</p>
+        <div id="histOut"></div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="foot">
+    Python {{ python }} · Flask · Método A: Simplex propio (<code>simplex_propio.py</code>) · Método B: PuLP {{ pulp or "(no instalado)" }} · Base de datos SQLite
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="{{ url_for('static', filename='js/utilidades.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
